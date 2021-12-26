@@ -1,8 +1,61 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import styles from '../styles/Home.module.css'
+import Head from 'next/head';
+import { useAuth } from '../src/hooks/useAuth';
+import { useEffect, useState } from 'react';
+
+import styles from '../styles/Home.module.css';
+import { useGoogleAuth } from '../src/hooks/useGoogleAuth';
+import Image from 'next/image';
 
 export default function Home() {
+  const [user, setUser] = useState();
+
+  useEffect(() => {
+    const initHomePage = () => {
+      const saveUserLocalData = () => {
+        const userLocalData = JSON.parse(localStorage.getItem('user-data'));
+        if (!userLocalData) {
+          return
+        }
+        
+        setUser(userLocalData)
+      }
+
+      const updateUserData = () => {
+        
+      }
+
+      saveUserLocalData()
+      updateUserData()
+    }
+
+    return initHomePage()
+  }, [])
+  
+  const authUserWithEmailAndPassword = async (e) => {
+    const { userCredentials, error } = await useAuth(getFormData(e));
+    if (error === "email already in use") {
+      console.log("error")
+      return
+    }
+
+    if (userCredentials) {
+      localStorage.setItem('access-token', userCredentials.accessToken)
+      return setUser(userCredentials)
+    }
+  }
+
+  const getFormData = (e) => {
+    e.preventDefault();
+    const form = e.target;
+    return { email: form.email.value, password: form.password.value }
+  }
+
+  const authWithGoogle = async () => {
+    const { user } = await useGoogleAuth();
+    setUser(user)
+    localStorage.setItem('user-data', JSON.stringify({ displayName, email, photoURL }))
+  }
+  
   return (
     <div className={styles.container}>
       <Head>
@@ -11,59 +64,33 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
+      <main>
+        {user ?
+          (
+            <>
+            <h1>{user.displayName}</h1>
+            <h2>{user.email}</h2>
+            <Image 
+              src={user.photoURL} 
+              alt={user.displayName} 
+              width={300}
+              height={300}
+            />
+            </>
+          ) : (
+            <>
+            <form onSubmit={authUserWithEmailAndPassword}>
+              <input name="email"/>
+              <input name="password"/>
+              <button type='submit'>Auth</button>
+            </form>
+    
+            <button onClick={authWithGoogle}>Auth with Google</button>
+            </>
+          )
+        }
 
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h2>Documentation &rarr;</h2>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h2>Learn &rarr;</h2>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h2>Examples &rarr;</h2>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h2>Deploy &rarr;</h2>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
       </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
-  )
+  );
 }
