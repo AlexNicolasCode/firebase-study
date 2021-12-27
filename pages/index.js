@@ -5,9 +5,11 @@ import { useEffect, useState } from 'react';
 import styles from '../styles/Home.module.css';
 import { useGoogleAuth } from '../src/hooks/useGoogleAuth';
 import Image from 'next/image';
+import { getRemoteConfigValue, initFirebase } from '../src/services/firebase';
 
 export default function Home() {
   const [user, setUser] = useState();
+  const [color, setColor] = useState();
 
   useEffect(() => {
     const initHomePage = () => {
@@ -17,39 +19,43 @@ export default function Home() {
           return
         }
         
+        const setMainColor = async () => {
+          const configColor = await getRemoteConfigValue("color")
+          .then((res) => res._value);
+
+          setColor(configColor);
+        }
+
+        setMainColor()
         setUser(userLocalData)
       }
-
-      const updateUserData = () => {
-        
-      }
-
+      
+      initFirebase()
       saveUserLocalData()
-      updateUserData()
     }
-
+    
     return initHomePage()
-  }, [])
-  
+  }, [])  
+
   const authUserWithEmailAndPassword = async (e) => {
     const { userCredentials, error } = await useAuth(getFormData(e));
     if (error === "email already in use") {
       console.log("error")
       return
     }
-
+    
     if (userCredentials) {
       localStorage.setItem('access-token', userCredentials.accessToken)
       return setUser(userCredentials)
     }
   }
-
+  
   const getFormData = (e) => {
     e.preventDefault();
     const form = e.target;
     return { email: form.email.value, password: form.password.value }
   }
-
+  
   const authWithGoogle = async () => {
     const { user } = await useGoogleAuth();
     setUser(user)
@@ -68,7 +74,7 @@ export default function Home() {
         {user ?
           (
             <>
-            <h1>{user.displayName}</h1>
+            <h1>{color} {user.displayName}</h1>
             <h2>{user.email}</h2>
             <Image 
               src={user.photoURL} 
@@ -89,7 +95,6 @@ export default function Home() {
             </>
           )
         }
-
       </main>
     </div>
   );

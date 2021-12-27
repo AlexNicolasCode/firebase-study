@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
+import { fetchAndActivate, getRemoteConfig, getValue } from "firebase/remote-config";
 
 const config = {
   apiKey: process.env.NEXT_PUBLIC_API_KEY,
@@ -11,14 +12,23 @@ const config = {
   messagingSenderId: process.env.NEXT_PUBLIC_MESSAGING_SENDER_ID,
   appId: process.env.NEXT_PUBLIC_APP_ID
 };
+
+const initFirebase = () => {
+  return initializeApp(config);
+}
   
 const auth = () => {
-  initializeApp(config);
   return getAuth()
 }
 
 const db = () => {
-  return getDatabase(initializeApp(config))
+  return getDatabase(initFirebase())
 }
 
-export { auth, db }
+const getRemoteConfigValue = async (configName: string) => {
+  const remoteConfig = getRemoteConfig();
+  await fetchAndActivate(remoteConfig);
+  return await getValue(remoteConfig, configName);
+}
+
+export { auth, db, getRemoteConfigValue, initFirebase }
